@@ -29,6 +29,11 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
+// Helper to truncate long request text
+function truncate(str, n) {
+  return str.length > n ? str.slice(0, n - 3) + '...' : str;
+}
+
 // Register /req slash command
 (async () => {
   const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -60,10 +65,12 @@ const client = new Client({
   }
 })();
 
+// Bot ready
 client.once('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
+// Slash command handling
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
   if (interaction.commandName !== 'req') return;
@@ -71,26 +78,28 @@ client.on('interactionCreate', async interaction => {
   const requestText = interaction.options.getString('request');
   const channel = interaction.guild.channels.cache.get(REQUEST_CHANNEL_ID);
 
-  if (!channel)
+  if (!channel) {
     return interaction.reply({
       content: 'Request channel not found.',
-      flags: 64 // ephemeral
+      ephemeral: true
     });
+  }
 
-  await interaction.deferReply({
-    flags: 64 // ephemeral
-  });
+  await interaction.deferReply({ ephemeral: true });
 
-  // Embed description
+  // Send GIF first
+  const GIF_URL = 'https://cdn.discordapp.com/attachments/1191516424565436609/1316558122369941635/937bcf07.gif?ex=6926ee8c&is=69259d0c&hm=4886b7144ef196fc7c132c6c68028ab4bd6b76b610ba39bdf093bb0eeb354295';
+  await channel.send({ content: GIF_URL });
+
+  // Embed for the request
   const embedDesc = `
-‎‎  
-_ _       ⠀  ˚‧︵‿   **new request**    𓏼
+_ _       ˚‧︵‿   **New Request**    𓏼
 
 > _ _     ${interaction.user} requested  ˚̣̣̣  **${requestText}**
 
--# _ _ ༯ ⠀ don't claim u__nles__s uploader
--# _ _ ༯ ⠀ you will be **pinged** once your req is completed
--# _ _ ༯ ⠀ uploaders can **click** to **claim**
+-# _ _ ༯ Don't claim unless you are an uploader
+-# _ _ ༯ You will be **pinged** once your request is completed
+-# _ _ ༯ Uploaders can **click** to **claim**
 _ _`;
 
   const embed = new EmbedBuilder()
@@ -105,7 +114,7 @@ _ _`;
       .setStyle(ButtonStyle.Secondary)
   );
 
-  // Send ping + embed
+  // Send ping + embed after GIF
   const msg = await channel.send({
     content: `<@&${UPLOADER_ROLE_ID}>`,
     embeds: [embed],
@@ -129,24 +138,24 @@ _ _`;
 
   // Button collector
   const collector = msg.createMessageComponentCollector({
-    componentType: ComponentType.Button
+    componentType: ComponentType.Button,
   });
 
   collector.on('collect', async i => {
     try {
       const member = await i.guild.members.fetch(i.user.id);
 
-      // only uploaders can claim
+      // Only uploaders can claim
       if (!member.roles.cache.has(UPLOADER_ROLE_ID)) {
         return i.reply({
-          content: 'only uploaders can claim.',
-          flags: 64 // ephemeral
+          content: 'Only uploaders can claim this request.',
+          ephemeral: true
         });
       }
 
       await i.deferUpdate();
 
-      // Disable button globally
+      // Disable the button globally
       const disabledRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('claimed')
@@ -154,32 +163,22 @@ _ _`;
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(true)
       );
-
       await msg.edit({ components: [disabledRow] });
 
-      const claimMsg = `_ _     𓂃       ₊  **${i.user} has claimed the request**    𓏼
-> _ _     you have __48 hours__ to complete it ೃ`;
+      const claimMsg = `**${i.user} has claimed the request**\nYou have 48 hours to complete it.`;
 
+      // Send claim message inside the thread if exists
       if (thread) {
         await thread.send({ content: claimMsg });
       } else {
         await msg.reply({ content: claimMsg });
       }
 
-      await i.followUp({
-        content: 'You claimed this request!',
-        flags: 64 // ephemeral
-      });
-
-      collector.stop();
     } catch (err) {
       console.error('Button collector error:', err);
     }
   });
 });
 
-function truncate(str, n) {
-  return str.length > n ? str.slice(0, n - 3) + '...' : str;
-}
-
+// Login
 client.login(TOKEN);
