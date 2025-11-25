@@ -18,7 +18,7 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 const REQUEST_CHANNEL_ID = process.env.REQUEST_CHANNEL_ID;
 const UPLOADER_ROLE_ID = process.env.UPLOADER_ROLE_ID;
-const EMBED_COLOR = process.env.EMBED_COLOR || 'ffe9ec';
+const EMBED_COLOR = process.env.EMBED_COLOR || 'FFE9EC';
 
 const client = new Client({
   intents: [
@@ -91,7 +91,7 @@ _ _`;
   const buttonRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId('claim_request')
-      .setLabel('Claim')
+      .setLabel('claim')
       .setStyle(ButtonStyle.Secondary)
   );
 
@@ -134,7 +134,7 @@ _ _`;
       const disabledRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('claimed')
-          .setLabel('Claimed')
+          .setLabel('claimed')
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(true)
       );
