@@ -18,7 +18,7 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 const REQUEST_CHANNEL_ID = process.env.REQUEST_CHANNEL_ID;
 const UPLOADER_ROLE_ID = process.env.UPLOADER_ROLE_ID;
-const EMBED_COLOR = process.env.EMBED_COLOR || 'FFE9EC';
+const EMBED_COLOR = process.env.EMBED_COLOR || 'ffe9ec';
 
 const client = new Client({
   intents: [
@@ -44,9 +44,15 @@ const client = new Client({
 
   try {
     if (GUILD_ID) {
-      await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [command] });
+      await rest.put(
+        Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+        { body: [command] }
+      );
     } else {
-      await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [command] });
+      await rest.put(
+        Routes.applicationCommands(CLIENT_ID),
+        { body: [command] }
+      );
     }
     console.log('Slash command registered!');
   } catch (err) {
@@ -64,18 +70,23 @@ client.on('interactionCreate', async interaction => {
 
   const requestText = interaction.options.getString('request');
   const channel = interaction.guild.channels.cache.get(REQUEST_CHANNEL_ID);
-  if (!channel)
-    return interaction.reply({ content: 'Request channel not found.', ephemeral: true });
 
-  await interaction.deferReply({ ephemeral: true });
+  if (!channel)
+    return interaction.reply({
+      content: 'Request channel not found.',
+      flags: 64 // ephemeral
+    });
+
+  await interaction.deferReply({
+    flags: 64 // ephemeral
+  });
 
   // Embed description
   const embedDesc = `
-‎‎‎‎  
+‎‎  
 _ _       ⠀  ˚‧︵‿   **new request**    𓏼
 
 > _ _     ${interaction.user} requested  ˚̣̣̣  **${requestText}**
-
 
 -# _ _ ༯ ⠀ don't claim u__nles__s uploader
 -# _ _ ༯ ⠀ you will be **pinged** once your req is completed
@@ -87,7 +98,6 @@ _ _`;
     .setColor(`#${EMBED_COLOR}`)
     .setTimestamp();
 
-  // Claim button
   const buttonRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId('claim_request')
@@ -95,14 +105,14 @@ _ _`;
       .setStyle(ButtonStyle.Secondary)
   );
 
-  // Send ping + embed + button
+  // Send ping + embed
   const msg = await channel.send({
     content: `<@&${UPLOADER_ROLE_ID}>`,
     embeds: [embed],
     components: [buttonRow]
   });
 
-  // Create thread
+  // Create thread for the request
   let thread;
   try {
     thread = await msg.startThread({
@@ -113,24 +123,30 @@ _ _`;
     console.error('Thread creation failed:', err);
   }
 
-  await interaction.editReply({ content: 'Your request has been posted!' });
+  await interaction.editReply({
+    content: 'Your request has been posted!'
+  });
 
-  // Button collector (no time limit)
-  const collector = msg.createMessageComponentCollector({ componentType: ComponentType.Button });
+  // Button collector
+  const collector = msg.createMessageComponentCollector({
+    componentType: ComponentType.Button
+  });
 
   collector.on('collect', async i => {
     try {
       const member = await i.guild.members.fetch(i.user.id);
 
-      // Only uploaders can claim
+      // only uploaders can claim
       if (!member.roles.cache.has(UPLOADER_ROLE_ID)) {
-        return i.reply({ content: 'only uploaders may claim.', ephemeral: true });
+        return i.reply({
+          content: 'only uploaders can claim.',
+          flags: 64 // ephemeral
+        });
       }
 
-      // Acknowledge the click
       await i.deferUpdate();
 
-      // Disable button for everyone
+      // Disable button globally
       const disabledRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
           .setCustomId('claimed')
@@ -138,19 +154,23 @@ _ _`;
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(true)
       );
+
       await msg.edit({ components: [disabledRow] });
 
-      // Claim message
       const claimMsg = `_ _     𓂃       ₊  **${i.user} has claimed the request**    𓏼
 > _ _     you have __48 hours__ to complete it ೃ`;
 
-      if (thread) await thread.send({ content: claimMsg });
-      else await msg.reply({ content: claimMsg });
+      if (thread) {
+        await thread.send({ content: claimMsg });
+      } else {
+        await msg.reply({ content: claimMsg });
+      }
 
-      // Confirmation to claimer
-      await i.followUp({ content: 'You claimed this request!', ephemeral: true });
+      await i.followUp({
+        content: 'You claimed this request!',
+        flags: 64 // ephemeral
+      });
 
-      // Stop collector after claim
       collector.stop();
     } catch (err) {
       console.error('Button collector error:', err);
