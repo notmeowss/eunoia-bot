@@ -93,13 +93,13 @@ client.on('interactionCreate', async interaction => {
 
   // Embed for the request
   const embedDesc = `
-_ _       ˚‧︵‿   **New Request**    𓏼
+_ _       ˚‧︵‿   **new Request**    𓏼
 
 > _ _     ${interaction.user} requested  ˚̣̣̣  **${requestText}**
 
--# _ _ ༯ Don't claim unless you are an uploader
--# _ _ ༯ You will be **pinged** once your request is completed
--# _ _ ༯ Uploaders can **click** to **claim**
+-# _ _ ༯ don't claim unless you are an uploader
+-# _ _ ༯ you will be **pinged** once your request is completed
+-# _ _ ༯ uploaders can **click** to **claim**
 _ _`;
 
   const embed = new EmbedBuilder()
@@ -133,7 +133,7 @@ _ _`;
   }
 
   await interaction.editReply({
-    content: 'Your request has been posted!'
+    content: 'your request has been posted!'
   });
 
   // Button collector
@@ -148,7 +148,7 @@ _ _`;
       // Only uploaders can claim
       if (!member.roles.cache.has(UPLOADER_ROLE_ID)) {
         return i.reply({
-          content: 'Only uploaders can claim this request.',
+          content: 'only uploaders can claim this request.',
           ephemeral: true
         });
       }
@@ -165,7 +165,7 @@ _ _`;
       );
       await msg.edit({ components: [disabledRow] });
 
-      const claimMsg = `**${i.user} has claimed the request**\nYou have 48 hours to complete it.`;
+      const claimMsg = `**${i.user} has claimed the request**\nyou have 48 hours to complete it.`;
 
       // Send claim message inside the thread if exists
       if (thread) {
@@ -182,3 +182,4 @@ _ _`;
 
 // Login
 client.login(TOKEN);
+
